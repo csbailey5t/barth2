@@ -4,3 +4,4 @@ lib/
 pip-selfcheck.json
 pyvenv.cfg
 share/
+paragraphs/

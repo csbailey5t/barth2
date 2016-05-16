@@ -175,6 +175,6 @@ for train_indices, test_indices in k_fold:
     scores.append(score)
 
 print('total texts classified: ', len(data))
-print('Score: ', sum(scores)/len(score))
+print('Score: ', sum(scores)/len(scores))
 print('Confusion matrix: ')
 print(confusion)
