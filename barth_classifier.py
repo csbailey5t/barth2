@@ -1,23 +1,26 @@
 # Based very heavily on
 # https://nicschrading.com/project/Intro-to-NLP-with-spaCy/
 
-from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC
+# from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 from sklearn.cross_validation import KFold
 from sklearn.metrics import confusion_matrix, f1_score
 # from sklearn.metrics import accuracy_score
 from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 import numpy
 import os
 from pandas import DataFrame
-from spacy.en import English
+# from spacy.en import English
 import string
 
 # Create the parser with spaCy
-parser = English()
+# parser = English()
 
 # Use default nltk stoplist for now
 STOPLIST = set(stopwords.words('english') + list(ENGLISH_STOP_WORDS))
@@ -70,7 +73,9 @@ def cleanText(text):
 # could consider stemming or lemmatization for classifier
 def tokenizeText(text):
     # get tokens
-    tokens = parser(text)
+    # tokens = parser(text)
+
+    tokens = [token for token in word_tokenize(text)]
 
     # stoplist the tokens
     tokens = [token for token in tokens if token not in STOPLIST]
@@ -92,6 +97,7 @@ def printNMostInformative(vectorizer, classifier, N):
     print("Class 1 best: ")
     for feature in topClass1:
         print(feature)
+    print("Class 2 best: ")
     for feature in topClass2:
         print(feature)
 
@@ -99,9 +105,14 @@ def printNMostInformative(vectorizer, classifier, N):
 # define the vectorizer and classifier
 # with the CountVectorizer, use the custom tokenizer function
 # go ahead and specify n-gram range to change later if desired
-vectorizer = CountVectorizer(ngram_range=(1, 1))
+vectorizer = TfidfVectorizer(
+    tokenizer=tokenizeText,
+    ngram_range=(1, 2),
+    strip_accents='unicode'
+    )
 # in above vectorizer, need to get custom tokenizer with spacy working
 classifier = LinearSVC()
+# classifier = MultinomialNB()
 # create a pipline that cleans, tokenizes and vectorizes, and classifies
 pipeline = Pipeline([
     ('cleanText', CleanTextTransformer()),
@@ -157,7 +168,7 @@ data.to_csv('data.csv')
 # shuffle the dataset to help with validating prediction accuracy
 data = data.reindex(numpy.random.permutation(data.index))
 
-k_fold = KFold(n=len(data), n_folds=6)
+k_fold = KFold(n=len(data), n_folds=8)
 scores = []
 confusion = numpy.array([[0, 0], [0, 0]])
 for train_indices, test_indices in k_fold:
@@ -170,10 +181,16 @@ for train_indices, test_indices in k_fold:
     pipeline.fit(train_text, train_y)
     predictions = pipeline.predict(test_text)
 
+    # print('--------------------')
+    # printNMostInformative(vectorizer, classifier, 10)
+
     confusion += confusion_matrix(test_y, predictions)
     score = f1_score(test_y, predictions, pos_label=AFTER)
+    print('----------------------')
+    print("Score: ", score)
     scores.append(score)
 
+print('-------------------')
 print('total texts classified: ', len(data))
 print('Score: ', sum(scores)/len(scores))
 print('Confusion matrix: ')
