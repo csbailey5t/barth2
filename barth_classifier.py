@@ -27,7 +27,7 @@ STOPLIST = set(stopwords.words('english') + list(ENGLISH_STOP_WORDS))
 
 # Create a group of symbols to remove
 SYMBOLS = " ".join(string.punctuation).split(" ") + \
-    ["-----", "---", "...", "“", "”", "'ve", "'s", "``"]
+    ["-----", "---", "...", "“", "”", "'ve", "'s", "``", "''"]
 
 
 # Create a transformer to clean the text with spaCy
@@ -75,7 +75,7 @@ def tokenizeText(text):
     # get tokens
     # tokens = parser(text)
     tokens = [token for token in word_tokenize(text)]
-
+    tokens = [token for token in tokens if token.isalpha()]
     # stoplist the tokens
     tokens = [token for token in tokens if token not in STOPLIST]
     # stoplist the symbols
