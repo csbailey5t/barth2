@@ -5,8 +5,8 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.base import TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.svm import LinearSVC
-# from sklearn.naive_bayes import MultinomialNB
+# from sklearn.svm import LinearSVC
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.stop_words import ENGLISH_STOP_WORDS
 from sklearn.cross_validation import KFold
 from sklearn.metrics import confusion_matrix, f1_score
@@ -27,7 +27,7 @@ STOPLIST = set(stopwords.words('english') + list(ENGLISH_STOP_WORDS))
 
 # Create a group of symbols to remove
 SYMBOLS = " ".join(string.punctuation).split(" ") + \
-    ["-----", "---", "...", "“", "”", "'ve"]
+    ["-----", "---", "...", "“", "”", "'ve", "'s", "``"]
 
 
 # Create a transformer to clean the text with spaCy
@@ -74,12 +74,10 @@ def cleanText(text):
 def tokenizeText(text):
     # get tokens
     # tokens = parser(text)
-
     tokens = [token for token in word_tokenize(text)]
 
     # stoplist the tokens
     tokens = [token for token in tokens if token not in STOPLIST]
-
     # stoplist the symbols
     tokens = [token for token in tokens if token not in SYMBOLS]
 
@@ -108,11 +106,12 @@ def printNMostInformative(vectorizer, classifier, N):
 vectorizer = TfidfVectorizer(
     tokenizer=tokenizeText,
     ngram_range=(1, 2),
-    strip_accents='unicode'
+    strip_accents='unicode',
+    max_features=100
     )
 # in above vectorizer, need to get custom tokenizer with spacy working
-classifier = LinearSVC()
-# classifier = MultinomialNB()
+# classifier = LinearSVC()
+classifier = MultinomialNB()
 # create a pipline that cleans, tokenizes and vectorizes, and classifies
 pipeline = Pipeline([
     ('cleanText', CleanTextTransformer()),
@@ -153,9 +152,14 @@ def build_data_frame(path, classification):
 BEFORE = 'before'
 AFTER = 'after'
 
+# SOURCES = [
+#     ('paragraphs/pre-election', BEFORE),
+#     ('paragraphs/post-election', AFTER)
+# ]
+
 SOURCES = [
-    ('paragraphs/pre-election', BEFORE),
-    ('paragraphs/post-election', AFTER)
+    ('output/pre', BEFORE),
+    ('output/post', AFTER)
 ]
 
 data = DataFrame({'text': [], 'class': []})
@@ -181,8 +185,8 @@ for train_indices, test_indices in k_fold:
     pipeline.fit(train_text, train_y)
     predictions = pipeline.predict(test_text)
 
-    # print('--------------------')
-    # printNMostInformative(vectorizer, classifier, 10)
+    print('--------------------')
+    printNMostInformative(vectorizer, classifier, 10)
 
     confusion += confusion_matrix(test_y, predictions)
     score = f1_score(test_y, predictions, pos_label=AFTER)
